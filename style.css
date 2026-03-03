@@ -1,0 +1,223 @@
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #1a1612;
+      background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(180,130,80,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(100,70,40,0.12) 0%, transparent 6%);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    #chessContainer {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 28px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(180,130,80,0.15);
+      border-radius: 4px;
+      box-shadow:
+        0 40px 80px rgba(0,0,0,0.6),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    /* ── Eval Bar ── */
+    #evalWrapper {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #evaluation {
+      width: 14px;
+      height: 320px;
+      border-radius: 7px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    #blackEvaluation {
+      width: 100%;
+      background: #1a1612;
+      transition: height 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    #whiteEvaluation {
+      width: 100%;
+      background: linear-gradient(180deg, #f0d9b5 0%, #e8c99a 100%);
+      transition: height 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    #evalScore {
+      font-size: 10px;
+      font-weight: 600;
+      color: #c8a96e;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Board ── */
+	#boardWrapper {
+	  display: flex;
+	  flex-direction: row;
+	  align-items: flex-start;
+	  gap: 4px;
+	}
+
+    #chessBoard {
+      display: grid;
+      grid-template-columns: repeat(8, 40px);
+      width: 320px;
+      height: 320px;
+      border-radius: 2px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 2px rgba(180,130,80,0.3),
+        0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .square {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      font-size: 30px;
+    }
+
+    .light { background-color: #f0d9b5; }
+    .dark  { background-color: #b58863; }
+    .selected { background-color: #f0ee75;}
+
+    .square:hover {
+      filter: brightness(1.08);
+      cursor: pointer;
+    }
+
+    .canMoveMarker { 
+        background-color: #0e0e0e;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+	
+	/* NEU: Spalte mit Board oben, File-Labels unten */
+	#boardColumn {
+	  display: flex;
+	  flex-direction: column;
+	  gap: 4px;
+	}
+
+	/* Rank-Labels links */
+	#coordRank {
+	  display: flex;
+	  flex-direction: column;
+	  width: 12px;
+	  height: 320px;
+	}
+
+	#coordRank span {
+	  flex: 1;
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
+	  font-size: 9px;
+	  color: #ffffff;
+	  letter-spacing: 0.05em;
+	}
+
+	/* File-Labels unten */
+	#coordFile {
+	  display: flex;
+	  flex-direction: row;
+	  width: 320px;
+	}
+
+	#coordFile span {
+	  width: 40px;
+	  text-align: center;
+	  font-size: 9px;
+	  color: #ffffff;
+	  letter-spacing: 0.05em;
+	}
+
+    /* ── PGN Panel ── */
+    #pgnPanel {
+      display: flex;
+      flex-direction: column;
+      width: 130px;
+      height: 320px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(180,130,80,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    #pgnHeader {
+      padding: 8px 10px;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #ffffff;
+      border-bottom: 1px solid rgba(180,130,80,0.1);
+      font-family: 'Playfair Display', serif;
+    }
+
+    #pgnContainer {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow-y: auto;
+      flex: 1;
+      padding: 6px 0;
+    }
+
+    #pgnContainer::-webkit-scrollbar { width: 3px; }
+    #pgnContainer::-webkit-scrollbar-track { background: transparent; }
+    #pgnContainer::-webkit-scrollbar-thumb { background: rgba(180,130,80,0.3); border-radius: 2px; }
+
+    .pgn-row {
+      display: grid;
+      grid-template-columns: 28px 1fr 1fr;
+      align-items: center;
+      padding: 3px 8px;
+    }
+
+    .pgn-row:hover { background: rgba(180,130,80,0.05); }
+
+    .pgn-num {
+      font-size: 8px;
+      color: #ffffff;
+      letter-spacing: 0.05em;
+    }
+
+    .pgn-move {
+      font-size: 9px;
+      color: rgba(240,217,181,0.75);
+      padding: 2px 4px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .pgn-move:hover {
+      background: rgba(180,130,80,0.15);
+      color: #f0d9b5;
+    }
+
+    .pgn-move.active {
+      background: rgba(180,130,80,0.2);
+      color: #f0d9b5;
+    }

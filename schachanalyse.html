@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schach</title>
+  <link href="style.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="chessContainer">
+
+    <!-- Eval Bar -->
+    <div id="evalWrapper">
+      <div id="evalScore">+0.0</div>
+      <div id="evaluation">
+        <div id="blackEvaluation"></div>
+        <div id="whiteEvaluation"></div>
+      </div>
+    </div>
+
+    <!-- Board + coordinates -->
+    <div id="boardWrapper">
+
+	  <!-- Zahlen 8→1 links -->
+	  <div id="coordRank">
+		<span>8</span><span>7</span><span>6</span><span>5</span>
+		<span>4</span><span>3</span><span>2</span><span>1</span>
+	  </div>
+
+	  <!-- Board + Buchstaben in einer Spalte -->
+	  <div id="boardColumn">
+		<div id="chessBoard"></div>
+		<div id="coordFile">
+		  <span>a</span><span>b</span><span>c</span><span>d</span>
+		  <span>e</span><span>f</span><span>g</span><span>h</span>
+		</div>
+	  </div>
+
+	</div>
+
+    <!-- PGN Panel -->
+    <div id="pgnPanel">
+      <div id="pgnHeader">Notation</div>
+      <div id="pgnContainer"></div>
+    </div>
+
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>
