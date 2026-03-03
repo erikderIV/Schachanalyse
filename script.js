@@ -26,19 +26,27 @@
     /* ── Gameloop ── */
 
     async function gameLoop(){
+		let from = null;
+		let to = null;
         while (true) {
             if (selectedSqr !== null){selectedSqr.classList.remove('selected');}
             selectedSqr = null;
+			from = null;
             const squares = chessBoard.children;
-            const from = await waitForSquareClick();
+            from = await waitForSquareClick();
             selectedSqr = squares[from];
             if (board[from] === null) continue;
             if (board[from].color !== mc) continue;
             const aS = getPossibleMoves(from);
             createMoveMarkers(aS);
             selectedSqr.classList.add('selected');
+			
+            to = await waitForSquareClick();
 
-            const to = await waitForSquareClick();
+			if (aS.contains(to)){
+				board[to] = board[from];
+				board[from] = null;
+			}
 
             refreshBoard();
         }
@@ -229,4 +237,5 @@
 	Unaccurate Move: Höhere Abweichung als 0.25 aber noch nicht von +1 auf 0 oder von 0 auf - 
 	Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1 delta
 	Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
+
 	*/
