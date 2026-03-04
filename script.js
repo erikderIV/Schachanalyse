@@ -1,44 +1,43 @@
+const chessBoard    = document.getElementById("chessBoard");
+const blackEval     = document.getElementById("blackEvaluation");
+const whiteEval     = document.getElementById("whiteEvaluation");
+const pgnContainer  = document.getElementById("pgnContainer");
+const evalScore     = document.getElementById("evalScore");
+const coordFile     = document.getElementById("coordFile");
 
-    const chessBoard    = document.getElementById("chessBoard");
-    const blackEval     = document.getElementById("blackEvaluation");
-    const whiteEval     = document.getElementById("whiteEvaluation");
-    const pgnContainer  = document.getElementById("pgnContainer");
-    const evalScore     = document.getElementById("evalScore");
-    const coordFile     = document.getElementById("coordFile");
+const pieces ={white:{king:"♔",queen:"♕",rook:"♖",bishop:"♗",knight:"♘",pawn:"♙"},black:{king:"♚",queen:"♛",rook:"♜",bishop:"♝",knight:"♞",pawn:"♟"}};
+const backRank = ["rook","knight","bishop","queen","king","bishop","knight","rook"];
 
-    const pieces ={white:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"},black:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"}};
-    const backRank = ["rook","knight","bishop","queen","king","bishop","knight","rook"];
+let resolveClick = null;
 
-    let resolveClick = null;
-
-    let selectedSqr = null;
+let selectedSqr = null;
 	
-	let moveHistory = [];
-	let moveIndex = 0;
+let moveHistory = [];
+let moveIndex = 0;
 	
-	let stockfish = null;
+let stockfish = null;
 
-    function createPiece(t,c){return {type: t, color: c};}
-    function getPiece(g,c,r){return g[c+r*8];}
-    function startGame(){moveIndex = 0; moveHistory = [];buildBoard(); moveHistory.push(setStartingPosition()); initStockfish(); gameLoop();}
+function createPiece(t,c){return {type: t, color: c};}
+function getPiece(g,c,r){return g[c+r*8];}
+function startGame(){moveIndex = 0; moveHistory = [];buildBoard(); moveHistory.push(setStartingPosition()); initStockfish(); gameLoop();}
 
     /* -- Gameloop -- */
 
-    async function gameLoop(){
-		const squares = chessBoard.children;		
-		let from = null;
-		let to = null;
-		
-        while (true) {	
-			const move = moveHistory[moveIndex];
+async function gameLoop(){
+	const squares = chessBoard.children;		
+	let from = null;
+	let to = null;
+	
+	while (true) {	
+		const move = moveHistory[moveIndex];
 			
-			const fen = generateFEN(move);
+		const fen = generateFEN(move);
 			
-			stockfish.postMessage(`position fen ${fen}`);
-			stockfish.postMessage(`go movetime 1000`);
+		stockfish.postMessage(`position fen ${fen}`);
+		stockfish.postMessage(`go movetime 1000`);
 			
-            refreshBoard(move);
-            if (selectedSqr !== null){selectedSqr.classList.remove('selected');}
+        refreshBoard(move);
+		if (selectedSqr !== null){selectedSqr.classList.remove('selected');}
             selectedSqr = null;
 			
 			if (from === null){
@@ -759,5 +758,6 @@ function initStockfish() {
 	Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 	*/
+
 
 
