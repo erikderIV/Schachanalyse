@@ -363,8 +363,8 @@
 	/* ── Stockfish ── */
 	
 	function initStockfish() {
-		stockfishWorker = new Worker('stockfish.js'); // Pfad zu stockfish.js
-		stockfishWorker.onmessage = (e) => {
+		stockfish = new Worker('stockfish.js'); 
+		stockfish.onmessage = (e) => {
 			const line = e.data;
 			// bestmove oder score ausgeben
 			if (line.startsWith('info') && line.includes('score')) {
@@ -374,8 +374,8 @@
 				console.log('BestMove:', line);
 			}
 		};
-		stockfishWorker.postMessage("uci");
-		stockfishWorker.postMessage("isready");
+		stockfish.postMessage("uci");
+		stockfish.postMessage("isready");
 	}
 	
 	stockfish.onmessage = (e) => {
