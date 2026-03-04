@@ -19,6 +19,9 @@ let stockfish = null;
 let currentAnalysisId = 0;
 let stockfishReady = false;
 
+let stockfishBestMove = null;
+let stockfishBestMoveReady = false;
+
 function createPiece(t,c){return {type: t, color: c};}
 function getPiece(g,c,r){return g[c+r*8];}
 function startGame(){moveIndex = 0; moveHistory = [];buildBoard(); moveHistory.push(setStartingPosition()); initStockfish(); gameLoop();}
@@ -35,11 +38,12 @@ async function gameLoop(){
 	let from = null;
 	let to = null;
 
+	getBestMove(0);
+
 	while (true){
 		const move = moveHistory[moveIndex];
 
-		const fen = generateFEN(move);
-
+        createRecentMoveMarkers(move);
 		refreshBoard(move);
 		if (selectedSqr !== null){selectedSqr.classList.remove('selected');}
 		selectedSqr = null;
@@ -94,6 +98,10 @@ async function gameLoop(){
 		moveHistory[moveIndex] = makeMove(from, to, move, choice);
 		
 		analyseUntilMoveChanges(moveIndex);
+
+		clearBestMove();
+
+		getBestMove(moveIndex);
     }
 }
 
@@ -192,7 +200,7 @@ function makeMove(from, to, move, prom = "queen"){
 	board[to] = board[from];
 	board[from] = null;
 
-	return {k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi};
+	return {k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi, from: from, to: to};
 }
 
 function generateFEN(move){
@@ -371,6 +379,67 @@ function createMoveMarkers(indxs){
 	});
 }
 
+function createRecentMoveMarkers(move) {
+	const from = move.from;
+	const to = move.to;
+	const squares = chessBoard.children;
+
+	document.querySelectorAll(".movedMarker")
+		.forEach(marker => marker.remove());
+
+    if (from == null || to == null) return;
+
+	for (let index of [from, to]) {
+		const marker = document.createElement('div');
+		marker.classList.add('movedMarker');
+        squares[index].appendChild(marker);
+	}
+}
+
+function showBestMove(best) {
+	const fileMap = { a: 0, b: 1, c: 2, d: 3, e: 4, f: 5, g: 6, h: 7 };
+
+	const fc = fileMap[best[0]];
+	const fr = 8 - parseInt(best[1]);
+	const tc = fileMap[best[2]];
+	const tr = 8 - parseInt(best[3]);
+
+	const fromIndex = fc + fr * 8;
+	const toIndex = tc + tr * 8;
+
+	const squares = chessBoard.children;
+	const fromRect = squares[fromIndex].getBoundingClientRect();
+	const toRect = squares[toIndex].getBoundingClientRect();
+	const boardRect = chessBoard.getBoundingClientRect();
+
+	// Mittelpunkte relativ zum Brett
+	const x1 = fromRect.left - boardRect.left + fromRect.width / 2;
+	const y1 = fromRect.top - boardRect.top + fromRect.height / 2;
+	const x2 = toRect.left - boardRect.left + toRect.width / 2;
+	const y2 = toRect.top - boardRect.top + toRect.height / 2;
+
+	const svg = document.getElementById('arrowLayer');
+	svg.innerHTML = `
+        <defs>
+            <marker id="arrowhead" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto">
+                <polygon points="0 0, 4 2, 0 4" fill="rgba(0,180,0,0.85)" />
+            </marker>
+        </defs>
+        <line 
+            x1="${x1}" y1="${y1}" 
+            x2="${x2}" y2="${y2}"
+            stroke="rgba(0,180,0,0.85)"
+            stroke-width="8"
+            stroke-linecap="round"
+            marker-end="url(#arrowhead)"
+        />
+    `;
+}
+function clearBestMove() {
+	const svg = document.getElementById('arrowLayer');
+	if (svg) svg.innerHTML = '';
+}
+
 /* -- Stockfish -- */
 function initStockfish() {
     stockfish = new Worker('stockfish-18-lite-single.js'); 
@@ -424,32 +493,78 @@ function waitForReady() {
 }
 
 async function analyseUntilMoveChanges(startIndex) {
-    currentAnalysisId++;
-    const analysisId = currentAnalysisId;
+	currentAnalysisId++;
+	const analysisId = currentAnalysisId;
 
-    const move = moveHistory[startIndex];
-    const fen = generateFEN(move);
+	if (stockfish) {
+		stockfish.terminate();
+		stockfishReady = false;
+		initStockfish();
+		await waitForReady();
+	}
 
-    // Nur stop schicken wenn Stockfish bereits aktiv ist
-    if (stockfishReady) {
-        stockfish.postMessage("stop");
-    }
+	if (analysisId !== currentAnalysisId) return;
 
-    stockfish.postMessage("isready");
-    await waitForReady();
+	const move = moveHistory[startIndex];
+	const fen = generateFEN(move);
 
-    if (analysisId !== currentAnalysisId) return;
+	stockfish.postMessage(`position fen ${fen}`);
+	stockfish.postMessage("go infinite");
 
-    stockfish.postMessage(`position fen ${fen}`);
-    stockfish.postMessage("go infinite");
+	while (moveIndex === startIndex && analysisId === currentAnalysisId) {
+		await new Promise(resolve => setTimeout(resolve, 100));
+	}
 
-    while (moveIndex === startIndex && analysisId === currentAnalysisId) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
+	stockfish.postMessage("stop");
+}
+function initStockfishBestMove() {
+	stockfishBestMove = new Worker('stockfish-18-lite-single.js');
 
-    stockfish.postMessage("stop");
+	stockfishBestMove.onmessage = (e) => {
+		const line = e.data;
+
+		if (line === "readyok") {
+			stockfishBestMoveReady = true;
+		}
+
+		if (line.startsWith('bestmove')) {
+			const best = line.split(' ')[1];
+			console.log('Bester Zug:', best);
+			showBestMove(best);
+		}
+	};
+
+	stockfishBestMove.postMessage("uci");
+	stockfishBestMove.postMessage("isready");
 }
 
+function waitForBestMoveReady() {
+	return new Promise(resolve => {
+		const handler = (e) => {
+			if (e.data === "readyok") {
+				stockfishBestMove.removeEventListener("message", handler);
+				resolve();
+			}
+		};
+		stockfishBestMove.addEventListener("message", handler);
+	});
+}
+
+async function getBestMove(startIndex) {
+	if (stockfishBestMove) {
+		stockfishBestMove.terminate();
+		stockfishBestMoveReady = false;
+	}
+
+	initStockfishBestMove();
+	await waitForBestMoveReady();
+
+	const move = moveHistory[startIndex];
+	const fen = generateFEN(move);
+
+	stockfishBestMove.postMessage(`position fen ${fen}`);
+	stockfishBestMove.postMessage("go depth 20");
+}
 
     /* -- Move Logik -- */
 
@@ -778,9 +893,9 @@ function updatePGN() {
 }
 
 async function init() {
-    startGame();
-    await waitForReady(); // warten bis Stockfish bereit ist
-    analyseUntilMoveChanges(moveIndex);
+	startGame();
+	initStockfishBestMove();
+	analyseUntilMoveChanges(moveIndex);
 }
 
 init();
