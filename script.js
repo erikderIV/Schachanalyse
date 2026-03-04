@@ -388,6 +388,7 @@ function initStockfish() {
 			const match = line.match(/score cp (-?\d+)/);
 			if (match) {
 				const p = parseInt(match[1]) / 100;
+				console.log('Bewertung: ', p);
 				updateEvaluation(p);
 			}
 		}
