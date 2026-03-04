@@ -374,8 +374,6 @@ function createMoveMarkers(indxs){
 function initStockfish() {
     stockfish = new Worker('stockfish-18-lite-single.js'); 
 
-    let lastScore = 0;
-
     stockfish.onmessage = (e) => {
         const line = e.data;
 
@@ -385,7 +383,6 @@ function initStockfish() {
                 let p = parseInt(match[1]) / 100;
                 const currentMove = moveHistory[moveIndex];
                 if (currentMove && currentMove.mc === "black") p = -p;
-                lastScore = p;
                 updateEvaluation(p);
             }
         }
@@ -409,6 +406,18 @@ function initStockfish() {
     stockfish.postMessage("isready");
 }
 
+function waitForReady() {
+    return new Promise(resolve => {
+        const handler = (e) => {
+            if (e.data === "readyok") {
+                stockfish.removeEventListener("message", handler);
+                resolve();
+            }
+        };
+        stockfish.addEventListener("message", handler);
+    });
+}
+
 async function analyseUntilMoveChanges(startIndex) {
     currentAnalysisId++;
     const analysisId = currentAnalysisId;
@@ -416,13 +425,10 @@ async function analyseUntilMoveChanges(startIndex) {
     const move = moveHistory[startIndex];
     const fen = generateFEN(move);
 
-    // Erst stoppen, dann auf "readyok" warten, dann neu starten
     stockfish.postMessage("stop");
-    stockfish.postMessage("isready"); // Stockfish antwortet mit "readyok" wenn er bereit ist
-
+    stockfish.postMessage("isready");
     await waitForReady();
 
-    // Nochmal prüfen ob die Analyse noch aktuell ist
     if (analysisId !== currentAnalysisId) return;
 
     stockfish.postMessage(`position fen ${fen}`);
@@ -773,8 +779,13 @@ function updatePGN() {
 	}
 }
 
-startGame();
-analyseUntilMoveChanges(moveIndex);
+async function init() {
+    startGame();
+    await waitForReady(); // warten bis Stockfish bereit ist
+    analyseUntilMoveChanges(moveIndex);
+}
+
+init();
 
 function copyGrid(g){
 	let grid = new Array(64).fill(null);
@@ -797,6 +808,7 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
+
 
 
 
