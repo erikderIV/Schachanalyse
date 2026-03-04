@@ -6,7 +6,7 @@
     const evalScore     = document.getElementById("evalScore");
     const coordFile     = document.getElementById("coordFile");
 
-    const pieces ={white:{king:"♔",queen:"♕",rook:"♖",bishop:"♗",knight:"♘",pawn:"♙"},black:{king:"♚",queen:"♛",rook:"♜",bishop:"♝",knight:"♞",pawn:"♟"}};
+    const pieces ={white:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"},black:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"}};
     const backRank = ["rook","knight","bishop","queen","king","bishop","knight","rook"];
 
     let resolveClick = null;
@@ -22,7 +22,7 @@
     function getPiece(g,c,r){return g[c+r*8];}
     function startGame(){moveIndex = 0; moveHistory = [];buildBoard(); moveHistory.push(setStartingPosition()); initStockfish(); gameLoop();}
 
-    /* ── Gameloop ── */
+    /* -- Gameloop -- */
 
     async function gameLoop(){
 		const squares = chessBoard.children;		
@@ -289,7 +289,7 @@
 		return fen;
 	}
 
-    /* ── Board ── */
+    /* -- Board -- */
     function setStartingPosition(){
 		let board = new Array(64).fill(null);
         for(let r = 0; r < 8; r++){
@@ -360,7 +360,7 @@
         });
     }
 	
-	/* ── Stockfish ── */
+	/* -- Stockfish -- */
 	
 function initStockfish() {
 	stockfish = new Worker('stockfish.js'); 
@@ -370,8 +370,8 @@ function initStockfish() {
 		if (line.startsWith('info') && line.includes('score cp')) {
 			const match = line.match(/score cp (-?\d+)/);
 			if (match) {
-				const cp = parseInt(match[1]);
-				console.log('Bewertung (Centipawns):', cp);
+				const p = parseInt(match[1]) / 100;
+				updateEvaluation(p);
 			}
 		}
 	
@@ -394,7 +394,7 @@ function initStockfish() {
 	stockfish.postMessage("isready");
 }
 
-    /* ── Move Logik ── */
+    /* -- Move Logik -- */
 	
 	function getLegalMoves(index, move){
 		const piece = move.grid[index];
@@ -690,7 +690,7 @@ function initStockfish() {
 		return false;
 	}
 
-    /* ── Eval Bar ── */
+    /* -- Eval Bar -- */
     function normalize(x) { return 1 / (1 + Math.exp(-0.55 * x)); }
 
     function updateEvaluation(ev) {
@@ -704,7 +704,7 @@ function initStockfish() {
       evalScore.style.color = ev >= 0 ? "#c8a96e" : "#5c5c5c";
     }
 
-    /* ── PGN ── */
+    /* -- PGN -- */
     function updatePGN() {
       const tokens = PGN.trim().split(/\s+/);
       let i = 0;
@@ -759,6 +759,5 @@ function initStockfish() {
 	Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 	*/
-
 
 
