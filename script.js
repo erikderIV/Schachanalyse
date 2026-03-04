@@ -418,7 +418,7 @@ async function analyseUntilMoveChanges(startIndex) {
 
     stockfish.postMessage("stop");
     stockfish.postMessage(`position fen ${fen}`);
-    stockfish.postMessage("go depth 20"); // "depth" korrekt geschrieben!
+    stockfish.postMessage("go infinite"); // "depth" korrekt geschrieben!
 
     while (moveIndex === startIndex && analysisId === currentAnalysisId) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -777,6 +777,7 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
+
 
 
 
