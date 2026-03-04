@@ -21,6 +21,11 @@ let currentAnalysisId = 0;
 function createPiece(t,c){return {type: t, color: c};}
 function getPiece(g,c,r){return g[c+r*8];}
 function startGame(){moveIndex = 0; moveHistory = [];buildBoard(); moveHistory.push(setStartingPosition()); initStockfish(); gameLoop();}
+function indexToSquare(index) {
+    const file = String.fromCharCode(97 + (index % 8));
+    const rank = 8 - Math.floor(index / 8);
+    return file + rank;
+}
 
 /* -- Gameloop -- */
 
@@ -300,6 +305,14 @@ function generateFEN(move){
 	if (move.q){
 		fen += "q";
 	}
+	
+	if (!move.K && !move.Q && !move.k && !move.q) {
+		fen += "-";
+	}
+	
+	fen += " ";
+	
+	fen += move.en !== null ? indexToSquare(move.en) : "-";
 
 	fen += " " + move.hm + " " + move.mi;
 
@@ -761,6 +774,5 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
-
 
 
