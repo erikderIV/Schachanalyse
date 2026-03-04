@@ -416,15 +416,35 @@ async function analyseUntilMoveChanges(startIndex) {
     const move = moveHistory[startIndex];
     const fen = generateFEN(move);
 
+    // Erst stoppen, dann auf "readyok" warten, dann neu starten
     stockfish.postMessage("stop");
+    stockfish.postMessage("isready"); // Stockfish antwortet mit "readyok" wenn er bereit ist
+
+    await waitForReady();
+
+    // Nochmal prüfen ob die Analyse noch aktuell ist
+    if (analysisId !== currentAnalysisId) return;
+
     stockfish.postMessage(`position fen ${fen}`);
-    stockfish.postMessage("go infinite"); // "depth" korrekt geschrieben!
+    stockfish.postMessage("go infinite");
 
     while (moveIndex === startIndex && analysisId === currentAnalysisId) {
         await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     stockfish.postMessage("stop");
+}
+
+function waitForReady() {
+    return new Promise(resolve => {
+        const handler = (e) => {
+            if (e.data === "readyok") {
+                stockfish.removeEventListener("message", handler);
+                resolve();
+            }
+        };
+        stockfish.addEventListener("message", handler);
+    });
 }
 
     /* -- Move Logik -- */
@@ -777,6 +797,7 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
+
 
 
 
