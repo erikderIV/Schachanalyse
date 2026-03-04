@@ -5,13 +5,13 @@ const pgnContainer  = document.getElementById("pgnContainer");
 const evalScore     = document.getElementById("evalScore");
 const coordFile     = document.getElementById("coordFile");
 
-const pieces ={white:{king:"♔",queen:"♕",rook:"♖",bishop:"♗",knight:"♘",pawn:"♙"},black:{king:"♚",queen:"♛",rook:"♜",bishop:"♝",knight:"♞",pawn:"♟"}};
+const pieces ={white:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"},black:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"}};
 const backRank = ["rook","knight","bishop","queen","king","bishop","knight","rook"];
 
 let resolveClick = null;
 
 let selectedSqr = null;
-	
+
 let moveHistory = [];
 let moveIndex = 0;
 	
@@ -21,76 +21,94 @@ function createPiece(t,c){return {type: t, color: c};}
 function getPiece(g,c,r){return g[c+r*8];}
 function startGame(){moveIndex = 0; moveHistory = [];buildBoard(); moveHistory.push(setStartingPosition()); initStockfish(); gameLoop();}
 
-    /* -- Gameloop -- */
+/* -- Gameloop -- */
+	
+async function analyseUntilMoveChanges(startIndex) {
+	const move = moveHistory[startIndex];
+	const fen = generateFEN(move);
+
+	stockfish.postMessage(`position fen ${fen}`);
+	stockfish.postMessage("go infinite");
+
+	console.log("Analyse gestartet für Index:", startIndex);
+
+	while (moveIndex === startIndex) {
+		// kurze Pause, damit UI nicht blockiert
+		await new Promise(resolve => setTimeout(resolve, 100));
+	}
+
+	// Sobald moveIndex sich geändert hat:
+	stockfish.postMessage("stop");
+	console.log("Analyse gestoppt, neuer Index:", moveIndex);
+}
 
 async function gameLoop(){
 	const squares = chessBoard.children;		
 	let from = null;
 	let to = null;
 	
-	while (true) {	
+    while (true) {	
 		const move = moveHistory[moveIndex];
 			
 		const fen = generateFEN(move);
-			
-		stockfish.postMessage(`position fen ${fen}`);
-		stockfish.postMessage(`go movetime 1000`);
+		
+		analyseUntilMoveChanges(moveIndex);
 			
         refreshBoard(move);
-		if (selectedSqr !== null){selectedSqr.classList.remove('selected');}
-            selectedSqr = null;
+        if (selectedSqr !== null){selectedSqr.classList.remove('selected');}
+        selectedSqr = null;
 			
-			if (from === null){
-				from = await waitForSquareClick();
+		if (from === null){
+			from = await waitForSquareClick();
+		}
+        if (move.grid[from] === null){from = null; continue;}
+        if (move.grid[from].color !== move.mc) {from = null; continue;}
+			
+        const aS = getLegalMoves(from, move);
+        createMoveMarkers(aS);
+		
+        selectedSqr = squares[from];
+        selectedSqr.classList.add('selected');
+		
+        to = await waitForSquareClick();
+			
+		if (move.grid[to] !== null){
+			if (move.grid[to].color === move.mc){
+				from = to;
+				to = null;
 			}
-            if (move.grid[from] === null){from = null; continue;}
-            if (move.grid[from].color !== move.mc) {from = null; continue;}
-			
-            const aS = getLegalMoves(from, move);
-            createMoveMarkers(aS);
-			
-            selectedSqr = squares[from];
-            selectedSqr.classList.add('selected');
-			
-            to = await waitForSquareClick();
-			
-			if (move.grid[to] !== null){
-				if (move.grid[to].color === move.mc){
-					from = to;
-					to = null;
+		}
+
+		if (!aS.includes(to)) continue;
+		
+		let choice = "queen";
+
+		if (move.grid[from].type === "pawn"){
+			const lr = move.mc === "white" ? 0 : 7;
+
+			if (Math.floor(to/8) === lr){
+
+				let input = prompt("Promotion (q = Queen, r = Rook, b = Bishop, n = Knight):", "q");
+
+				input = input ? input.toLowerCase() : "q";
+
+				const valid = ["q","r","b","n"];
+				if (!valid.includes(input)) input = "q";
+
+				switch(input){
+					case "r": choice = "rook"; break;
+					case "b": choice = "bishop"; break;
+					case "n": choice = "knight"; break;
+					default:  choice = "queen";
 				}
 			}
-
-			if (!aS.includes(to)) continue;
+		}
 			
-			let choice = "queen";
-
-			if (move.grid[from].type === "pawn"){
-				const lr = move.mc === "white" ? 0 : 7;
-
-				if (Math.floor(to/8) === lr){
-
-					let input = prompt("Promotion (q = Queen, r = Rook, b = Bishop, n = Knight):", "q");
-
-					input = input ? input.toLowerCase() : "q";
-
-					const valid = ["q","r","b","n"];
-					if (!valid.includes(input)) input = "q";
-
-					switch(input){
-						case "r": choice = "rook"; break;
-						case "b": choice = "bishop"; break;
-						case "n": choice = "knight"; break;
-						default:  choice = "queen";
-					}
-				}
-			}
+		moveIndex++;
 			
-			moveIndex++;
-			
-			moveHistory[moveIndex] = makeMove(from, to, move, choice);
-        }
+		moveHistory[moveIndex] = makeMove(from, to, move, choice);
     }
+}
 	
 	function makeMove(from, to, move, prom = "queen"){
 		let board = copyGrid(move.grid);
@@ -758,6 +776,5 @@ function initStockfish() {
 	Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 	*/
-
 
 
