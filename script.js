@@ -30,7 +30,8 @@ function indexToSquare(index) {
 /* -- Gameloop -- */
 
 async function analyseUntilMoveChanges(startIndex) {
-    const analysisId = ++currentAnalysisId;
+	currentAnalysisId++;
+    const analysisId = currentAnalysisId;
 
     const move = moveHistory[startIndex];
     const fen = generateFEN(move);
