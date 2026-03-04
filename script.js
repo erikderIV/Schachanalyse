@@ -413,7 +413,7 @@ async function analyseUntilMoveChanges(startIndex) {
 
     stockfish.postMessage("stop");
     stockfish.postMessage(`position fen ${fen}`);
-    stockfish.postMessage("go depht 20");
+    stockfish.postMessage("go depth 20");
 
     console.log("Analyse gestartet:", analysisId);
 
@@ -774,6 +774,7 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
+
 
 
 
