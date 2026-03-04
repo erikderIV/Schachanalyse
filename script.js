@@ -393,7 +393,7 @@ function createMoveMarkers(indxs){
 /* -- Stockfish -- */
 
 function initStockfish() {
-	stockfish = new Worker('stockfish-18-lite.js'); 
+	stockfish = new Worker('stockfish-18-lite-single.js'); 
 	stockfish.onmessage = (e) => {
 		const line = e.data;
 
