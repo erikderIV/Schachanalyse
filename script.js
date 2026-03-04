@@ -29,26 +29,6 @@ function indexToSquare(index) {
 
 /* -- Gameloop -- */
 
-async function analyseUntilMoveChanges(startIndex) {
-	currentAnalysisId++;
-    const analysisId = currentAnalysisId;
-
-    const move = moveHistory[startIndex];
-    const fen = generateFEN(move);
-
-    stockfish.postMessage("stop");
-    stockfish.postMessage(`position fen ${fen}`);
-    stockfish.postMessage("go infinite");
-
-    console.log("Analyse gestartet:", analysisId);
-
-    while (moveIndex === startIndex && analysisId === currentAnalysisId) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    stockfish.postMessage("stop");
-}
-
 async function gameLoop(){
 	const squares = chessBoard.children;
 	let from = null;
@@ -424,6 +404,25 @@ function initStockfish() {
 	stockfish.postMessage("uci");
 	stockfish.postMessage("isready");
 }
+async function analyseUntilMoveChanges(startIndex) {
+	currentAnalysisId++;
+    const analysisId = currentAnalysisId;
+
+    const move = moveHistory[startIndex];
+    const fen = generateFEN(move);
+
+    stockfish.postMessage("stop");
+    stockfish.postMessage(`position fen ${fen}`);
+    stockfish.postMessage("go depht 20");
+
+    console.log("Analyse gestartet:", analysisId);
+
+    while (moveIndex === startIndex && analysisId === currentAnalysisId) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    stockfish.postMessage("stop");
+}
 
     /* -- Move Logik -- */
 
@@ -775,6 +774,7 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
+
 
 
 
