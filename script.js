@@ -362,21 +362,19 @@
 	
 	/* ── Stockfish ── */
 	
-	function initStockfish() {
-		stockfish = new Worker('stockfish.js'); 
-		
-	
+function initStockfish() {
+	stockfish = new Worker('stockfish.js'); 
 	stockfish.onmessage = (e) => {
 		const line = e.data;
 			
-			if (line.startsWith('info') && line.includes('score cp')) {
+		if (line.startsWith('info') && line.includes('score cp')) {
 			const match = line.match(/score cp (-?\d+)/);
 			if (match) {
 				const cp = parseInt(match[1]);
 				console.log('Bewertung (Centipawns):', cp);
 			}
 		}
-
+	
 		// Matt Score
 		if (line.startsWith('info') && line.includes('score mate')) {
 			const match = line.match(/score mate (-?\d+)/);
@@ -385,16 +383,16 @@
 				console.log('Matt in Zügen:', mateIn);
 			}
 		}
-
-		// Best Move
+	
+			// Best Move
 		if (line.startsWith('bestmove')) {
 			const bestMove = line.split(' ')[1];
 			console.log('Bester Zug:', bestMove);
 		}
 	};
-		stockfish.postMessage("uci");
-		stockfish.postMessage("isready");
-	}
+	stockfish.postMessage("uci");
+	stockfish.postMessage("isready");
+}
 
     /* ── Move Logik ── */
 	
@@ -761,5 +759,6 @@
 	Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 	*/
+
 
 
