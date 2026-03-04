@@ -96,6 +96,8 @@ async function gameLoop(){
 		moveIndex++;
 
 		moveHistory[moveIndex] = makeMove(from, to, move, choice);
+
+        console.log(generatePGN(moveHistory));
 		
 		analyseUntilMoveChanges(moveIndex);
 
@@ -115,6 +117,7 @@ function makeMove(from, to, move, prom = "queen"){
 	let mi = move.mi;
 	let en = null;
 	let ec = move.mc === "white" ? "black" : "white";
+    let t = board[to];
 
 	if (board[from].type === "pawn"){
 		hm = 0;
@@ -181,7 +184,7 @@ function makeMove(from, to, move, prom = "queen"){
 		if (Math.floor(to/8) === lr){
 			board[to] = createPiece(prom, move.grid[from].color);
 			board[from] = null;
-			return {k, q, K, Q, en, grid: board, mc: ec};
+			return { k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi, from: from, to: to, t: t };
 		}
 	}
 
@@ -200,7 +203,40 @@ function makeMove(from, to, move, prom = "queen"){
 	board[to] = board[from];
 	board[from] = null;
 
-	return {k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi, from: from, to: to};
+	return {k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi, from: from, to: to, t: t};
+}
+
+function generatePGN(mH) {
+	let pgn = "";
+
+	for (let i = 1; i < mH.length; i++) {
+		const move = mH[i];
+		const prevMove = mH[i - 1];
+
+		if (move.mc === "black") {
+			pgn += Math.ceil(i / 2) + ". ";
+		}
+
+		const piece = prevMove.grid[move.from]; // Figur VOR dem Zug
+		let pieceChar = piece.type === "pawn" ? "" : piece.type[0].toUpperCase();
+
+		const capture = prevMove.grid[move.to] !== null || move.en === move.to ? "x" : "";
+		const promotion = move.prom ? `=${move.prom[0].toUpperCase()}` : "";
+		const check = isInCheck(move.mc, move) ? "+" : "";
+		const square = indexToSquare(move.to);
+
+		if (piece.type === "pawn" && capture !== "") {
+			pieceChar = indexToSquare(move.from)[0]; // z.B. "e" bei exd5
+		}
+
+		pgn += pieceChar + capture + square + promotion + check + " ";
+	}
+
+	return pgn;
+}
+
+function updatePGN(pgn) {
+	
 }
 
 function generateFEN(move){
@@ -322,7 +358,7 @@ function setStartingPosition(){
 			board[c+r*8] = piece;
 		}
 	}
-	return {k: true, q: true, K: true, Q: true, en: null, grid: board, mc: "white", hm: 0, mi: 1};
+	return {k: true, q: true, K: true, Q: true, en: null, grid: board, mc: "white", hm: 0, mi: 1, t: null};
 }
 
 function buildBoard(){
