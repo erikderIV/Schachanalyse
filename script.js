@@ -393,7 +393,7 @@ function createMoveMarkers(indxs){
 /* -- Stockfish -- */
 
 function initStockfish() {
-	stockfish = new Worker('stockfish.js'); 
+	stockfish = new Worker('stockfish-18-lite.js'); 
 	stockfish.onmessage = (e) => {
 		const line = e.data;
 
@@ -775,5 +775,6 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
+
 
 
