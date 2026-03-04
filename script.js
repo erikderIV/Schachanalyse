@@ -5,7 +5,7 @@ const pgnContainer  = document.getElementById("pgnContainer");
 const evalScore     = document.getElementById("evalScore");
 const coordFile     = document.getElementById("coordFile");
 
-const pieces ={white:{king:"♔",queen:"♕",rook:"♖",bishop:"♗",knight:"♘",pawn:"♙"},black:{king:"♚",queen:"♛",rook:"♜",bishop:"♝",knight:"♞",pawn:"♟"}};
+const pieces ={white:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"},black:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"}};
 const backRank = ["rook","knight","bishop","queen","king","bishop","knight","rook"];
 
 let resolveClick = null;
@@ -41,7 +41,7 @@ async function analyseUntilMoveChanges(startIndex) {
 
 	// Sobald moveIndex sich geändert hat:
 	stockfish.postMessage("stop");
-	stockfishIsCalculating = true;
+	stockfishIsCalculating = false;
 }
 
 async function gameLoop(){
