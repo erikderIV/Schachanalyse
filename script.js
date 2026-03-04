@@ -5,7 +5,7 @@ const pgnContainer  = document.getElementById("pgnContainer");
 const evalScore     = document.getElementById("evalScore");
 const coordFile     = document.getElementById("coordFile");
 
-const pieces ={white:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"},black:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"}};
+const pieces ={white:{king:"♔",queen:"♕",rook:"♖",bishop:"♗",knight:"♘",pawn:"♙"},black:{king:"♚",queen:"♛",rook:"♜",bishop:"♝",knight:"♞",pawn:"♟"}};
 const backRank = ["rook","knight","bishop","queen","king","bishop","knight","rook"];
 
 let resolveClick = null;
@@ -16,6 +16,7 @@ let moveHistory = [];
 let moveIndex = 0;
 	
 let stockfish = null;
+let stockfishIsCalculating = false;
 
 function createPiece(t,c){return {type: t, color: c};}
 function getPiece(g,c,r){return g[c+r*8];}
@@ -26,6 +27,7 @@ function startGame(){moveIndex = 0; moveHistory = [];buildBoard(); moveHistory.p
 async function analyseUntilMoveChanges(startIndex) {
 	const move = moveHistory[startIndex];
 	const fen = generateFEN(move);
+	stockfishIsCalculating = true;
 
 	stockfish.postMessage(`position fen ${fen}`);
 	stockfish.postMessage("go infinite");
@@ -39,7 +41,7 @@ async function analyseUntilMoveChanges(startIndex) {
 
 	// Sobald moveIndex sich geändert hat:
 	stockfish.postMessage("stop");
-	console.log("Analyse gestoppt, neuer Index:", moveIndex);
+	stockfishIsCalculating = true;
 }
 
 async function gameLoop(){
@@ -52,7 +54,9 @@ async function gameLoop(){
 			
 		const fen = generateFEN(move);
 		
-		analyseUntilMoveChanges(moveIndex);
+		if (!stockfishIsCalculating){
+			analyseUntilMoveChanges(moveIndex);
+		}
 			
         refreshBoard(move);
         if (selectedSqr !== null){selectedSqr.classList.remove('selected');}
