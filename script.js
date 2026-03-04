@@ -17,6 +17,7 @@ let moveIndex = 0;
 
 let stockfish = null;
 let currentAnalysisId = 0;
+let stockfishReady = false;
 
 function createPiece(t,c){return {type: t, color: c};}
 function getPiece(g,c,r){return g[c+r*8];}
@@ -377,6 +378,10 @@ function initStockfish() {
     stockfish.onmessage = (e) => {
         const line = e.data;
 
+        if (line === "readyok") {
+            stockfishReady = true;
+        }
+
         if (line.startsWith('info') && line.includes('score cp')) {
             const match = line.match(/score cp (-?\d+)/);
             if (match) {
@@ -425,7 +430,11 @@ async function analyseUntilMoveChanges(startIndex) {
     const move = moveHistory[startIndex];
     const fen = generateFEN(move);
 
-    stockfish.postMessage("stop");
+    // Nur stop schicken wenn Stockfish bereits aktiv ist
+    if (stockfishReady) {
+        stockfish.postMessage("stop");
+    }
+
     stockfish.postMessage("isready");
     await waitForReady();
 
@@ -441,17 +450,6 @@ async function analyseUntilMoveChanges(startIndex) {
     stockfish.postMessage("stop");
 }
 
-function waitForReady() {
-    return new Promise(resolve => {
-        const handler = (e) => {
-            if (e.data === "readyok") {
-                stockfish.removeEventListener("message", handler);
-                resolve();
-            }
-        };
-        stockfish.addEventListener("message", handler);
-    });
-}
 
     /* -- Move Logik -- */
 
@@ -808,6 +806,7 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
+
 
 
 
