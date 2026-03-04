@@ -5,7 +5,7 @@ const pgnContainer  = document.getElementById("pgnContainer");
 const evalScore     = document.getElementById("evalScore");
 const coordFile     = document.getElementById("coordFile");
 
-const pieces ={white:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"},black:{king:"?",queen:"?",rook:"?",bishop:"?",knight:"?",pawn:"?"}};
+const pieces ={white:{king:"♔",queen:"♕",rook:"♖",bishop:"♗",knight:"♘",pawn:"♙"},black:{king:"♚",queen:"♛",rook:"♜",bishop:"♝",knight:"♞",pawn:"♟"}};
 const backRank = ["rook","knight","bishop","queen","king","bishop","knight","rook"];
 
 let resolveClick = null;
@@ -761,5 +761,6 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
+
 
 
