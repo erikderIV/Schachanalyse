@@ -371,41 +371,46 @@ function createMoveMarkers(indxs){
 }
 
 /* -- Stockfish -- */
-
 function initStockfish() {
-	stockfish = new Worker('stockfish-18-lite-single.js'); 
-	stockfish.onmessage = (e) => {
-		const line = e.data;
+    stockfish = new Worker('stockfish-18-lite-single.js'); 
 
-		if (line.startsWith('info') && line.includes('score cp')) {
-			const match = line.match(/score cp (-?\d+)/);
-			if (match) {
-				const p = parseInt(match[1]) / 100;
-				console.log('Bewertung: ', p);
-				updateEvaluation(p);
-			}
-		}
+    let lastScore = 0;
 
-		// Matt Score
-		if (line.startsWith('info') && line.includes('score mate')) {
-			const match = line.match(/score mate (-?\d+)/);
-			if (match) {
-				const mateIn = parseInt(match[1]);
-				console.log('Matt in Zügen:', mateIn);
-			}
-		}
+    stockfish.onmessage = (e) => {
+        const line = e.data;
 
-		// Best Move
-		if (line.startsWith('bestmove')) {
-			const bestMove = line.split(' ')[1];
-			console.log('Bester Zug:', bestMove);
-		}
-	};
-	stockfish.postMessage("uci");
-	stockfish.postMessage("isready");
+        if (line.startsWith('info') && line.includes('score cp')) {
+            const match = line.match(/score cp (-?\d+)/);
+            if (match) {
+                let p = parseInt(match[1]) / 100;
+                const currentMove = moveHistory[moveIndex];
+                if (currentMove && currentMove.mc === "black") p = -p;
+                lastScore = p;
+                updateEvaluation(p);
+            }
+        }
+
+        if (line.startsWith('info') && line.includes('score mate')) {
+            const match = line.match(/score mate (-?\d+)/);
+            if (match) {
+                let mateIn = parseInt(match[1]);
+                const currentMove = moveHistory[moveIndex];
+                if (currentMove && currentMove.mc === "black") mateIn = -mateIn;
+                evalScore.textContent = mateIn > 0 ? `M${mateIn}` : `-M${Math.abs(mateIn)}`;
+            }
+        }
+
+        if (line.startsWith('bestmove')) {
+            console.log('Bester Zug:', line.split(' ')[1]);
+        }
+    };
+
+    stockfish.postMessage("uci");
+    stockfish.postMessage("isready");
 }
+
 async function analyseUntilMoveChanges(startIndex) {
-	currentAnalysisId++;
+    currentAnalysisId++;
     const analysisId = currentAnalysisId;
 
     const move = moveHistory[startIndex];
@@ -413,9 +418,7 @@ async function analyseUntilMoveChanges(startIndex) {
 
     stockfish.postMessage("stop");
     stockfish.postMessage(`position fen ${fen}`);
-    stockfish.postMessage("go depth 20");
-
-    console.log("Analyse gestartet:", analysisId);
+    stockfish.postMessage("go depth 20"); // "depth" korrekt geschrieben!
 
     while (moveIndex === startIndex && analysisId === currentAnalysisId) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -774,6 +777,7 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
+
 
 
 
