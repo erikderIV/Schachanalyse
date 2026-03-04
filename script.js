@@ -104,7 +104,7 @@
 		let en = null;
 		let ec = move.mc === "white" ? "black" : "white";
 		
-		if (board[from].type = "pawn"){
+		if (board[from].type === "pawn"){
 			hm = 0;
 		}
 		else if (board[to] !== null){
@@ -761,4 +761,5 @@
 	Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 	*/
+
 
