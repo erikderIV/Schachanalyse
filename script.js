@@ -364,19 +364,7 @@
 	
 	function initStockfish() {
 		stockfish = new Worker('stockfish.js'); 
-		stockfish.onmessage = (e) => {
-			const line = e.data;
-			// bestmove oder score ausgeben
-			if (line.startsWith('info') && line.includes('score')) {
-				console.log('Info:', line);
-			}
-			if (line.startsWith('bestmove')) {
-				console.log('BestMove:', line);
-			}
-		};
-		stockfish.postMessage("uci");
-		stockfish.postMessage("isready");
-	}
+		
 	
 	stockfish.onmessage = (e) => {
 		const line = e.data;
@@ -404,6 +392,10 @@
 			console.log('Bester Zug:', bestMove);
 		}
 	};
+		stockfish.postMessage("uci");
+		stockfish.postMessage("isready");
+	}
+
     /* ── Move Logik ── */
 	
 	function getLegalMoves(index, move){
@@ -769,3 +761,4 @@
 	Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 	*/
+
