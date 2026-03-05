@@ -239,3 +239,73 @@
       background: rgba(180,130,80,0.2);
       color: #f0d9b5;
     }
+
+    #moveBadge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-family: 'Georgia', serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        opacity: 0;
+        transform: translateY(-8px) scale(0.92);
+        transition: opacity 0.35s ease, transform 0.35s ease;
+        pointer-events: none;
+        z-index: 100;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+        white-space: nowrap;
+    }
+
+        #moveBadge.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Farben je Kategorie */
+        #moveBadge.brilliant {
+            background: #1baca6;
+            color: #fff;
+        }
+
+        #moveBadge.great {
+            background: #5c8fff;
+            color: #fff;
+        }
+
+        #moveBadge.best {
+            background: #6abf69;
+            color: #fff;
+        }
+
+        #moveBadge.excellent {
+            background: #8fc97a;
+            color: #fff;
+        }
+
+        #moveBadge.good {
+            background: #c8d96e;
+            color: #333;
+        }
+
+        #moveBadge.inaccuracy {
+            background: #e0c060;
+            color: #333;
+        }
+
+        #moveBadge.mistake {
+            background: #e07830;
+            color: #fff;
+        }
+
+        #moveBadge.blunder {
+            background: #c0392b;
+            color: #fff;
+        }
+
+        #moveBadge.missed {
+            background: #8e44ad;
+            color: #fff;
+        }

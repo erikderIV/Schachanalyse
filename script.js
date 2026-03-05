@@ -12,6 +12,7 @@ let resolveClick = null;
 
 let selectedSqr = null;
 
+let evalHistory = [];
 let moveHistory = [];
 let moveIndex = 0;
 
@@ -21,6 +22,18 @@ let stockfishReady = false;
 
 let stockfishBestMove = null;
 let stockfishBestMoveReady = false;
+
+const BADGE_LABELS = {
+	brilliant: "!! Brilliant",
+	great: "!  Great Move",
+	best: "★  Best Move",
+	excellent: "✓  Excellent",
+	good: "·  Good",
+	inaccuracy: "?! Inaccuracy",
+	mistake: "?  Mistake",
+	blunder: "?? Blunder",
+	missed: "⚑  Missed Win",
+};
 
 function createPiece(t,c){return {type: t, color: c};}
 function getPiece(g,c,r){return g[c+r*8];}
@@ -104,6 +117,8 @@ async function gameLoop(){
 		clearBestMove();
 
 		getBestMove(moveIndex);
+
+        getEvaluationMove(moveIndex);
     }
 }
 
@@ -578,12 +593,9 @@ function initStockfish() {
                 let mateIn = parseInt(match[1]);
                 const currentMove = moveHistory[moveIndex];
                 if (currentMove && currentMove.mc === "black") mateIn = -mateIn;
-                evalScore.textContent = mateIn > 0 ? `M${mateIn}` : `-M${Math.abs(mateIn)}`;
+				evalScore.textContent = mateIn > 0 ? `M${mateIn}` : `-M${Math.abs(mateIn)}`;
+                updateEvaluation(mateIn > 0 ? 100 : -100);
             }
-        }
-
-        if (line.startsWith('bestmove')) {
-            console.log('Bester Zug:', line.split(' ')[1]);
         }
     };
 
@@ -628,20 +640,37 @@ async function analyseUntilMoveChanges(startIndex) {
 
 	stockfish.postMessage("stop");
 }
-function initStockfishBestMove() {
+function initStockfishBestMove(capturedIndex = 0) {
 	stockfishBestMove = new Worker('stockfish-18-lite-single.js');
 
 	stockfishBestMove.onmessage = (e) => {
 		const line = e.data;
 
-		if (line === "readyok") {
-			stockfishBestMoveReady = true;
-		}
+		if (line === "readyok") stockfishBestMoveReady = true;
 
 		if (line.startsWith('bestmove')) {
 			const best = line.split(' ')[1];
-			console.log('Bester Zug:', best);
 			showBestMove(best);
+		}
+
+		if (line.startsWith('info') && line.includes('score cp')) {
+			const match = line.match(/score cp (-?\d+)/);
+			if (match) {
+				let p = parseInt(match[1]) / 100;
+				const m = moveHistory[capturedIndex]; // ← eingefroren
+				if (m && m.mc === "black") p = -p;
+				evalHistory[capturedIndex] = { eval: p, mate: null };
+			}
+		}
+
+		if (line.startsWith('info') && line.includes('score mate')) {
+			const match = line.match(/score mate (-?\d+)/);
+			if (match) {
+				let mateIn = parseInt(match[1]);
+				const m = moveHistory[capturedIndex];
+				if (m && m.mc === "black") mateIn = -mateIn;
+				evalHistory[capturedIndex] = { eval: mateIn > 0 ? 100 : -100, mate: mateIn };
+			}
 		}
 	};
 
@@ -667,7 +696,7 @@ async function getBestMove(startIndex) {
 		stockfishBestMoveReady = false;
 	}
 
-	initStockfishBestMove();
+	initStockfishBestMove(startIndex); // ← startIndex weitergeben
 	await waitForBestMoveReady();
 
 	const move = moveHistory[startIndex];
@@ -1034,12 +1063,93 @@ async function init() {
 
 init();
 
-function copyGrid(g){
+function copyGrid(g) {
 	let grid = new Array(64).fill(null);
-	for (let i = 0; i < 64; i++){
+	for (let i = 0; i < 64; i++) {
 		grid[i] = g[i];
 	}
 	return grid;
+}
+
+function classifyMove(prevEval, currEval, prevMove, currMove) {
+	const player = prevMove.mc === "white" ? "black" : "white"; // wer hat gezogen
+	const sign = player === "white" ? 1 : -1;
+
+	// Eval immer aus Sicht von Weiß → umrechnen auf Spieler-Perspektive
+	const eBefore = (prevEval?.eval ?? 0) * sign;
+	const eAfter = (currEval?.eval ?? 0) * sign;
+	const delta = eAfter - eBefore; // positiv = gut für den Spieler
+
+	// Missed: Gegner hatte Vorteil und Spieler hat ihn nicht genutzt
+	// (eBefore stark negativ, aber der Zug ändert wenig)
+	// → wird als separates Signal behandelt
+
+	// Brilliant: Aufopferung ohne Vorteil zu verlieren (delta >= -0.5)
+	// Prüfe ob ein Stück geopfert wurde
+	const captured = prevMove.grid[currMove.to];
+	const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 0 };
+	const capturedVal = captured ? pieceValues[captured.type] ?? 0 : 0;
+	const movedPiece = prevMove.grid[currMove.from];
+	const movedVal = movedPiece ? pieceValues[movedPiece.type] ?? 0 : 0;
+	const isSacrifice = movedVal > capturedVal + 1; // geopfert mehr als bekommen
+
+	if (isSacrifice && delta >= -0.5) return "brilliant";
+
+	// Klassifizierung nach delta
+	if (delta >= 0) return "best";       // kein Verlust
+	if (delta >= -0.1) return "excellent";
+	if (delta >= -0.25) return "good";
+	if (delta >= -0.5) return "inaccuracy";
+
+	// Stärkere Verluste
+	const wasWinning = eBefore >= 1.0;
+	const nowLosing = eAfter <= -0.5;
+	const nowNeutral = eAfter <= 0.1;
+
+	if (wasWinning && nowLosing) return "blunder";
+	if (wasWinning && nowNeutral) return "mistake";
+	if (delta < -0.5) return "blunder";
+
+	return "mistake";
+}
+
+let badgeTimeout = null;
+
+function showMoveBadge(category) {
+	const badge = document.getElementById('moveBadge');
+	if (!badge) return;
+
+	// Reset
+	badge.className = 'show ' + category;
+	badge.textContent = BADGE_LABELS[category] ?? category;
+
+	clearTimeout(badgeTimeout);
+	badgeTimeout = setTimeout(() => {
+		badge.classList.remove('show');
+	}, 3500);
+}
+
+function getEvaluationMove(index) {
+	if (index <= 1) return null; // Erster Zug: kein Vergleich möglich
+
+	// Warte bis beide Evals vorhanden sind
+	const check = () => {
+		const prev = evalHistory[index - 1];
+		const curr = evalHistory[index];
+
+		if (!prev || !curr) {
+			// Noch nicht fertig — kurz warten und nochmal prüfen
+			setTimeout(check, 300);
+			return;
+		}
+
+		const prevMove = moveHistory[index - 1];
+		const currMove = moveHistory[index];
+		const category = classifyMove(prev, curr, prevMove, currMove);
+		showMoveBadge(category);
+	};
+
+	setTimeout(check, 300);
 }
 
 /*
@@ -1055,13 +1165,3 @@ Blunder: Dein Zug hat dir das Spiel gekostet also von vorteil auf 0 oder auf *-1
 Missed: Dein Gegner hat dir eine Chance gelassen zu gewinnen mit einem Prinzip und du hast es nicht gesehen
 
 */
-
-
-
-
-
-
-
-
-
-
