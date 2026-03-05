@@ -97,7 +97,7 @@ async function gameLoop(){
 
 		moveHistory[moveIndex] = makeMove(from, to, move, choice);
 
-        console.log(generatePGN(moveHistory));
+        updatePGN(generatePGN(moveHistory));
 		
 		analyseUntilMoveChanges(moveIndex);
 
@@ -117,7 +117,9 @@ function makeMove(from, to, move, prom = "queen"){
 	let mi = move.mi;
 	let en = null;
 	let ec = move.mc === "white" ? "black" : "white";
-    let t = board[to];
+	let t = board[to];
+	let piece = board[from];
+    let state = "normal";
 
 	if (board[from].type === "pawn"){
 		hm = 0;
@@ -182,9 +184,7 @@ function makeMove(from, to, move, prom = "queen"){
 		const lr = move.mc === "white" ? 0 : 7;
 
 		if (Math.floor(to/8) === lr){
-			board[to] = createPiece(prom, move.grid[from].color);
-			board[from] = null;
-			return { k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi, from: from, to: to, t: t };
+			piece = createPiece(prom, move.grid[from].color);
 		}
 	}
 
@@ -200,10 +200,42 @@ function makeMove(from, to, move, prom = "queen"){
 		}
 	}
 
-	board[to] = board[from];
+	board[to] = piece;
 	board[from] = null;
 
-	return {k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi, from: from, to: to, t: t};
+	const allLegalMoves = getAllLegalMoves({ k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi, from: from, to: to, t: t });
+
+	if (allLegalMoves.length === 0) {
+		if (isInCheck(ec, { k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi, from: from, to: to, t: t })) {
+			state = "checkmate";
+		}
+		else {
+            state = "stalemate";
+		}
+	}
+
+	if (hm >= 100) {
+        state = "stalemate"; 
+	}
+
+	let count = 0;
+
+	for (let i = 0; i < moveHistory.length; i++) {
+		const fen1 = generateFEN(moveHistory[i]).split(" ");
+		let count = 0;
+
+		for (let j = 0; j < moveHistory.length; j++) {
+			const fen2 = generateFEN(moveHistory[j]).split(" ");
+			if (fen1[0] === fen2[0] && fen1[1] === fen2[1] &&
+				fen1[2] === fen2[2] && fen1[3] === fen2[3]) {
+				count++;
+			}
+		}
+
+		if (count >= 3) { state = "stalemate"; break; }
+	}
+
+	return {k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi, from: from, to: to, t: t, state: state};
 }
 
 function generatePGN(mH) {
@@ -217,26 +249,36 @@ function generatePGN(mH) {
 			pgn += Math.ceil(i / 2) + ". ";
 		}
 
-		const piece = prevMove.grid[move.from]; // Figur VOR dem Zug
-		let pieceChar = piece.type === "pawn" ? "" : piece.type[0].toUpperCase();
-
-		const capture = prevMove.grid[move.to] !== null || move.en === move.to ? "x" : "";
+		const piece = prevMove.grid[move.from];
+		let pieceChar;
+		const capture = prevMove.grid[move.to] !== null || prevMove.en === move.to ? "x" : "";
 		const promotion = move.prom ? `=${move.prom[0].toUpperCase()}` : "";
-		const check = isInCheck(move.mc, move) ? "+" : "";
+		let check = isInCheck(move.mc, move) ? "+" : "";
 		const square = indexToSquare(move.to);
+		let state;
 
-		if (piece.type === "pawn" && capture !== "") {
-			pieceChar = indexToSquare(move.from)[0]; // z.B. "e" bei exd5
+		switch (move.state) {
+			case "normal": state = ""; break; 
+			case "checkmate": state = "#"; check = ""; break;
+			case "stalemate": state = "½-½"; check = ""; break;
 		}
 
-		pgn += pieceChar + capture + square + promotion + check + " ";
+		switch (piece.type) {
+			case "pawn":
+				if (capture === "") {pieceChar = "";}
+				else {pieceChar = indexToSquare(move.from)[0];}
+			break;
+			case "knight": pieceChar = "N"; break;
+			case "bishop": pieceChar = "B";	break;
+			case "rook": pieceChar = "R"; break;
+			case "queen": pieceChar = "Q"; break;
+            case "king": pieceChar = "K"; break; 
+		}
+
+		pgn += pieceChar + capture + square + promotion + check + state + " ";
 	}
 
 	return pgn;
-}
-
-function updatePGN(pgn) {
-	
 }
 
 function generateFEN(move){
@@ -621,6 +663,24 @@ function getLegalMoves(index, move){
 	return [...aS];
 }
 
+function getAllLegalMoves(move) {
+    let aS = new Set();
+
+	for (let i = 0; i < 64; i++) {
+		const piece = move.grid[i];
+
+		if (piece === null) continue;
+
+		if (piece.color !== move.mc) continue;
+
+		for (let value of getLegalMoves(i, move)) {
+            aS.add({ from: i, to: value });
+		}
+	}
+
+    return [...aS];
+}
+
 function getPossibleMoves(index, move){
 	const piece = move.grid[index];
 	const aS= new Set();
@@ -851,41 +911,49 @@ function isInCheck(c, move){
 	return false;
 }
 
-function isSquareAttacked(index, c, move){
-		const aS = new Set();
-		for (let i = 0; i < 64; i++){
+function isSquareAttacked(index, c, move) {
+	const aS = new Set();
+
+	for (let i = 0; i < 64; i++) {
 		const piece = move.grid[i];
 
 		if (piece === null) continue;
 		if (piece.color !== c) continue;
 
-		if (piece.type === "pawn"){
+		if (piece.type === "pawn") {
 			const dir = piece.color === "white" ? -8 : 8;
-			for (let dx of [-1, 1]){
-				const s = dx + i + dir;
-				aS.add(dx + i + dir);
-			}
-		}
-		else if (piece.type ==="king"){
-			for (let x = -1; x <= 1; x++){
-				for (let y = -1; y <= 1; y++){
-					if (y === 0 && x === 0) continue;
-					aS.add(i + x + y * 8);
+			for (let dx of [-1, 1]) {
+				const col = i % 8;
+				const newCol = col + dx;
+				if (newCol >= 0 && newCol < 8) {
+					aS.add(i + dx + dir);
 				}
 			}
 		}
-		else{
-			for (let value of getPossibleMoves(i, move)){
+		else if (piece.type === "king") {
+			for (let x = -1; x <= 1; x++) {
+				for (let y = -1; y <= 1; y++) {
+					if (y === 0 && x === 0) continue;
+					const col = i % 8;
+					const newCol = col + x;
+					if (newCol >= 0 && newCol < 8) {
+						aS.add(i + x + y * 8);
+					}
+				}
+			}
+		}
+		else {
+			for (let value of getPossibleMoves(i, move)) {
 				aS.add(value);
 			}
 		}
 	}
-	if ([...aS].includes(index)) return true;
-	return false;
+
+	return [...aS].includes(index);
 }
 
-    /* -- Eval Bar -- */
-    function normalize(x) { return 1 / (1 + Math.exp(-0.55 * x)); }
+/* -- Eval Bar -- */
+function normalize(x) { return 1 / (1 + Math.exp(-0.55 * x)); }
 
 function updateEvaluation(ev) {
 	const w = 320 * normalize(ev);
@@ -898,9 +966,10 @@ function updateEvaluation(ev) {
 	evalScore.style.color = ev >= 0 ? "#c8a96e" : "#5c5c5c";
 }
 
-    /* -- PGN -- */
-function updatePGN() {
-	const tokens = PGN.trim().split(/\s+/);
+/* -- PGN -- */
+function updatePGN(pgn) {
+    pgnContainer.innerHTML = "";
+	const tokens = pgn.trim().split(/\s+/);
 	let i = 0;
 	while (i < tokens.length){
 		const tok = tokens[i];
