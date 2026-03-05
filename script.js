@@ -238,6 +238,39 @@ function makeMove(from, to, move, prom = "queen"){
 	return {k: k, q: q, K: K, Q: Q, en: en, grid: board, mc: ec, hm: hm, mi: mi, from: from, to: to, t: t, state: state};
 }
 
+function makeMoveRaw(from, to, move, prom = "queen") {
+	let board = copyGrid(move.grid);
+	let k = move.k, q = move.q, K = move.K, Q = move.Q;
+	let hm = move.hm, mi = move.mi, en = null;
+	let ec = move.mc === "white" ? "black" : "white";
+	let piece = board[from];
+
+	if (k && (from === 7 || to === 7)) k = false;
+	if (q && (from === 0 || to === 0)) q = false;
+	if (K && (from === 63 || to === 63)) K = false;
+	if (Q && (from === 55 || to === 55)) Q = false;
+	if ((Q || K) && (from === 60 || to === 60)) { Q = false; K = false; }
+	if ((q || k) && (from === 4 || to === 4)) { q = false; k = false; }
+
+	if (move.grid[from].type === "pawn") {
+		const dir = move.grid[from].color === "white" ? -8 : 8;
+		if (move.en === to) board[to - dir] = null;
+		if (to - from === dir * 2) en = to - dir;
+		const lr = move.mc === "white" ? 0 : 7;
+		if (Math.floor(to / 8) === lr) piece = createPiece(prom, move.grid[from].color);
+	}
+
+	if (move.grid[from].type === "king") {
+		if (from - to === 2) { board[from - 1] = board[from - 4]; board[from - 4] = null; }
+		if (from - to === -2) { board[from + 1] = board[from + 3]; board[from + 3] = null; }
+	}
+
+	board[to] = piece;
+	board[from] = null;
+
+	return { k, q, K, Q, en, grid: board, mc: ec, hm, mi, from, to, t: null, state: "normal" };
+}
+
 function generatePGN(mH) {
 	let pgn = "";
 
@@ -646,20 +679,16 @@ async function getBestMove(startIndex) {
 
     /* -- Move Logik -- */
 
-function getLegalMoves(index, move){
+function getLegalMoves(index, move) {
 	const piece = move.grid[index];
+	if (piece === null) return [];
+
 	const aS = new Set();
-
-	if (piece === null) return aS;
-
-	for (let value of getPossibleMoves(index, move)){
-		const simMove = makeMove(index, value, move);
-
+	for (let value of getPossibleMoves(index, move)) {
+		const simMove = makeMoveRaw(index, value, move); // ← hier
 		if (isInCheck(move.mc, simMove)) continue;
-
 		aS.add(value);
 	}
-
 	return [...aS];
 }
 
